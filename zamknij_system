@@ -1,0 +1,91 @@
+import tkinter as tk # gui
+from tkinter import messagebox # wyświetlanie okien dialogowych
+import os # dostęp do poleceń systemowych
+import sys # Windows check
+import threading # brak interferencji z GUI Windowsa ()
+import subprocess # ukrywanie okna konsoli (creationflags)
+
+# uruchom_polecenie: Uruchamia polecenie systemu Windows w tle, bez pokazywania okna.
+def uruchom_polecenie(polecenie):
+    subprocess.Popen(polecenie, shell=True, creationflags=0x08000000)
+
+# zaplanuj_zamkniecie: Planuje zamknięcie komputera po określonej liczbie minut.
+def zaplanuj_zamkniecie(minuty):
+    try:
+        polecenie = f"shutdown /s /t {minuty * 60}"  # Tworzy polecenie do zamknięcia komputera.
+        threading.Thread(target=lambda: uruchom_polecenie(polecenie)).start()  # Uruchamia polecenie w osobnym wątku.
+        messagebox.showinfo("Zaplanowano zamknięcie", f"Komputer wyłączy się za {minuty} minut.")  # Pokazuje informację o zaplanowanym zamknięciu.
+    except Exception as e:
+        messagebox.showerror("Błąd", f"Wystąpił błąd: {str(e)}")  # Wyświetla okno z informacją o błędzie.
+
+# anuluj_zamkniecie: Anuluje zaplanowane zamknięcie komputera.
+def anuluj_zamkniecie():
+    try:
+        polecenie = "shutdown /a"  # Tworzy polecenie do anulowania zamknięcia.
+        threading.Thread(target=lambda: uruchom_polecenie(polecenie)).start()  # Uruchamia polecenie w osobnym wątku.
+        messagebox.showinfo("Anulowano zamknięcie", "Zamknięcie komputera zostało anulowane.")  # Pokazuje informację o anulowaniu zamknięcia.
+    except Exception as e:
+        messagebox.showerror("Błąd", f"Wystąpił błąd: {str(e)}")  # Wyświetla okno z informacją o błędzie.
+
+# ustaw_wlasny_czas: Pobiera czas wpisany przez użytkownika i planuje zamknięcie komputera.
+def ustaw_wlasny_czas():
+    try:
+        minuty = int(pole_czasu.get())  # Pobiera czas wpisany przez użytkownika.
+        if minuty <= 0:
+            messagebox.showerror("Błąd", "Podaj liczbę większą od 0.")  # Wyświetla błąd, jeśli czas jest niepoprawny.
+            return
+        zaplanuj_zamkniecie(minuty)  # Planuje zamknięcie komputera.
+    except ValueError:
+        messagebox.showerror("Błąd", "Podaj poprawną liczbę minut.")  # Wyświetla błąd, jeśli wprowadzono niepoprawne dane.
+
+# główne okno programu
+root = tk.Tk()
+root.title("Wyłącznik Czasowy")
+root.geometry("400x200") 
+root.configure(bg="#f0f0f0")
+
+# etykieta z pytaniem
+etykieta = tk.Label(root, text="Za ile minut wyłączyć komputer?", bg="#f0f0f0")
+etykieta.pack(pady=10)
+
+# ramka na przyciski
+ramka_przyciskow = tk.Frame(root, bg="#f0f0f0")
+ramka_przyciskow.pack()
+
+# ile minut do zamknięcia
+czasy = [5, 10, 20, 30, 60, 90]
+
+# przyciski dla każdego czasu
+for czas in czasy:
+    przycisk = tk.Button(ramka_przyciskow, text=f"{czas} min", command=lambda m=czas: zaplanuj_zamkniecie(m))
+    przycisk.pack(side=tk.LEFT, padx=5, pady=5)
+
+# ramka na własny czas
+ramka_wlasny_czas = tk.Frame(root, bg="#f0f0f0")
+ramka_wlasny_czas.pack(pady=10)
+
+# etykieta i pole do wpisywania własnego czasu
+etykieta_wlasny_czas = tk.Label(ramka_wlasny_czas, text="Własny czas (min):", bg="#f0f0f0")
+etykieta_wlasny_czas.pack(side=tk.LEFT, padx=5)
+
+pole_czasu = tk.Entry(ramka_wlasny_czas, width=10)
+pole_czasu.pack(side=tk.LEFT, padx=5)
+
+# przycisk do ustawiania własnego czasu
+przycisk_ustaw = tk.Button(ramka_wlasny_czas, text="Ustaw", command=ustaw_wlasny_czas)
+przycisk_ustaw.pack(side=tk.LEFT, padx=5)
+
+# przycisk do anulowania zamknięcia
+przycisk_anuluj = tk.Button(root, text="Anuluj wyłączenie", command=anuluj_zamkniecie, bg="#ffcccc")
+przycisk_anuluj.pack(pady=10)
+
+# opis na dole
+info_label = tk.Label(root, text="Program do planowania zamknięcia systemu Windows",
+                    font=("Arial", 12), bg="#f0f0f0", fg="#888222")
+info_label.pack(side=tk.BOTTOM, pady=5)
+
+# centruje okno podczas uruchamiania
+root.eval('tk::PlaceWindow . center')
+
+# uruchom
+root.mainloop()
